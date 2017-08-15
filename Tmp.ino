@@ -1,30 +1,4 @@
-
-void testMotors() {
-  for (float f = 0.0; f < 1.0; f += 0.1) {
-    setMotorRight(f);
-    setMotorLeft(f);
-    delay(300);
-  }
-  for (float f = 1.0; f > 0.0; f -= 0.1) {
-    setMotorRight(f);
-    setMotorLeft(f);
-    delay(300);
-  }
-  for (float f = 0.0; f > -1.0; f -= 0.1) {
-    setMotorRight(f);
-    setMotorLeft(f);
-    delay(300);
-  }
-  for (float f = -1.0; f < 0.0; f += 0.1) {
-    setMotorRight(f);
-    setMotorLeft(f);
-    delay(300);
-  }
-  setMotorRight(0.0);
-  setMotorLeft(0.0);
-}
-
-  static float aX, aY, aZ;
+ float aX, aY, aZ;
 
 void avgGyro() {
   if (sumCount >= 1000) {

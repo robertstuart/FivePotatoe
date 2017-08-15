@@ -26,10 +26,10 @@
 const float TICKS_PER_FOOT = 1500.0;
 float motorDeadZone = 0.04;    // +- range where motor does not move.  Probably not important.
 float motorFpsToInput = 0.163; // Ration of change in speedR/speedL to fps.
-float cosFactor = -0.9;         // Affected by changes in center of oscillation.
-float cosTc = 0.98;
-float angleFactor = 10.0;
-float fpsFactor = 0.2;
+float cosFactor = -0.9;         // May need to be changed when there is a change of weight distribution.
+float cosTc = 0.98;             // Shouldn't need to be changed.
+float angleFactor = 10.0;       // Speed error to pitch angle of FivePotatoe
+float fpsFactor = 0.2;          // Angle error to speed adjustment.
 float pitchError = 7.0;        // Adjust to have no drift forward or backward.
 float motorGainMax = 4.0;       // As high as possible without instability or motor overheating.
 float motorGainMin = 0.5;       // Motor gain at zero fps
@@ -39,8 +39,8 @@ const float ENC_FACTOR = (float) (1000000 / TICKS_PER_FOOT);  // Change pulse wi
 const long ENC_FACTOR_M = (long) (ENC_FACTOR * 1000.0);  // Change pulse width to milli-fps speed
 
 char message[100] = "";
-unsigned long timeMicroseconds = 0UL;
-unsigned long timeMilliseconds = 0UL;
+unsigned long timeMicros = 0UL;
+unsigned long timeMillis = 0UL;
 volatile long tickPositionRight = 0L;
 volatile long tickPositionLeft = 0L;
 long tickPosition = 0L;
@@ -135,8 +135,8 @@ void loop() {
     isFirst = false;
     startMicro = micros();
   }
-  timeMicroseconds = micros() - startMicro;
-  timeMilliseconds = timeMicroseconds / 1000;
+  timeMicros = micros() - startMicro;
+  timeMillis = timeMicros / 1000;
 
   if (imu()) {
     if (isUp) twoPotatoe();
@@ -162,14 +162,14 @@ void beep() {
 
 
 /***********************************************************************.
- *  logFp() 
+ *  logFp() All logging and debugging code goes here.  Called ~208/sec
  ***********************************************************************/
 void logFp() {
   static unsigned long logTrigger1 = 0UL;
   static char serialChar = 0;
 //  avgGyro();
 
-  if (timeMilliseconds > logTrigger1) {
+  if (timeMillis > logTrigger1) {
     logTrigger1 += 100; // 10/sec
 
 //    Serial.print(controllerX); Serial.print("\t"); Serial.println(controllerY);

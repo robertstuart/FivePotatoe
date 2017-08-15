@@ -39,7 +39,7 @@ void imuInit() {
 boolean imu() {
   static unsigned long imuTrigger = 0UL;
   int ret = false;
-  if (timeMicroseconds > imuTrigger) { 
+  if (timeMicros > imuTrigger) { 
     imuTrigger += IMU_PERIOD;
     lsm6.readGyro();
     updateGyro();
@@ -81,10 +81,10 @@ void updateGyro() {
   int rotations = (int) ((gYaw + tc) / 360.0);
   gyroHeading = gYaw - (((float) rotations) * 360.0);
 
-  sumX += lsm6.g.x;
-  sumY += lsm6.g.y;
-  sumZ += lsm6.g.z;
-  sumCount++;
+//  sumX += lsm6.g.x;
+//  sumY += lsm6.g.y;
+//  sumZ += lsm6.g.z;
+//  sumCount++;
 }
 
 
@@ -117,6 +117,9 @@ void updateAccel() {
  * resetIMU()  From: https://forum.arduino.cc/index.php?topic=386269.0
  *             I2C clocks to make sure no slaves are hung in a read
  *             at startup
+ *             
+ *             This is left over from TwoPotatoe Due code and is probably
+ *             not needed here.
  **************************************************************************/
 void resetIMU() {
   // Issue 20 I2C clocks to make sure no slaves are hung in a read

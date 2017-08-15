@@ -34,7 +34,6 @@ void twoPotatoe() {
   // compute a weighted angle to eventually correct the speed error
   float targetAngle = -(fpsError * angleFactor); 
   targetAngle = constrain(targetAngle, -20.0, 20.0);
-debugFloat = targetAngle;
 
   // Compute angle error and weight factor.
   float angleError = targetAngle - gaPitch;
@@ -55,6 +54,11 @@ debugFloat = targetAngle;
 }
 
 
+/***********************************************************************.
+ *  runDown() Run TwoPotatoe while lying on the ground.  With a little 
+ *            skill and new batteries, FivePotatoe can be brought
+ *            to an upright position.
+ ***********************************************************************/
 void runDown() {
   float targetWFps = 6.0 * controllerY;
   float speedAdjustment = (((1.0 - abs(controllerY)) * 0.4) + 0.2) * controllerX; 

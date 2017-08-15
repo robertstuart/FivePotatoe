@@ -13,6 +13,10 @@ byte buttonStatus = 0;
 String displayStatus = "xxxx";           // message to Android device
 
 
+/**************************************************************************.
+ * control()  Called frequently.  There are some 2ms gaps whenever
+ *            the IMU is being read.
+ **************************************************************************/
 void control() {
   readSerial();
   blinkLeds();
@@ -23,10 +27,15 @@ void control() {
 }
 
 /**************************************************************************.
- * readSerial()
- *   
+ * readSerial() 1. Reads bluetooth to get commands from the Android app
+ *                 "Joystick bluetooth Commander":
+ *                 https://play.google.com/store/apps/details?id=org.projectproto.btjoystick&hl=en
+ *              2. Reads input from the USB seriol port to get values entered there.
+ *                 Currently, values are entered to adjust tuning parameters.   
  **************************************************************************/
 void readSerial() {
+
+  // Read the bluetooth to get command from the Andriod tablet app 
   while (Serial1.available() > 0) {
     static boolean isMsgInProgress = false;
     char b = Serial1.read();
@@ -90,8 +99,7 @@ void doMsg() {
 
 
 /**************************************************************************.
- * state()
- *         If change to running state, set pitch to current reading from
+ * state() If change to running state, set pitch to current reading from
  *         the accelerometer to have stable state at button press.  
  **************************************************************************/
 void state() {
@@ -103,7 +111,7 @@ void state() {
 }
 
 
-#define BOUNCE_TIME 50
+static int BOUNCE_TIME = 50;
 /**************************************************************************.
  * switches()
  *   
@@ -117,21 +125,21 @@ void switches() {
   static boolean stateD = false;
   static boolean oldStateD = false;
 
-  if (timeMilliseconds <= BOUNCE_TIME) return;
+  if (timeMillis <= BOUNCE_TIME) return;
   
   // Debounce A
   boolean buttonA = digitalRead(BALBOA_32U4_BUTTON_A) == LOW;
-  if (buttonA) timerA = timeMilliseconds;
-  if ((timeMilliseconds - timerA) > BOUNCE_TIME) stateA = false;
+  if (buttonA) timerA = timeMillis;
+  if ((timeMillis - timerA) > BOUNCE_TIME) stateA = false;
   else stateA = true;
 
   // Debounce D
   boolean buttonD = digitalRead(BUTTON_D) == LOW;
-  if (buttonD) timerD = timeMilliseconds;
-  if ((timeMilliseconds - timerD) > BOUNCE_TIME) stateD = false;
+  if (buttonD) timerD = timeMillis;
+  if ((timeMillis - timerD) > BOUNCE_TIME) stateD = false;
   else stateD = true;
 
-  // A press transition
+  // A press transition. Does nothing at the moment
   if (stateA && (!oldStateA)) {
     tone(6, 1000);
     delay(100);
@@ -140,10 +148,9 @@ void switches() {
     tone(6,1000);
     delay(100);
     noTone(6);
-    
   }
 
-  
+  // D press & release transition.  Change running state.
   if (stateD && !oldStateD) {         // D press transition
   }
   if (!stateD && oldStateD) {          // D release transition
@@ -162,8 +169,8 @@ void switches() {
  void blinkLeds() {
   static unsigned long blinkTrigger = 0UL;
   static boolean blinkToggle = true;
-  if (timeMilliseconds > blinkTrigger) {
-    blinkTrigger = timeMilliseconds + 200;
+  if (timeMillis > blinkTrigger) {
+    blinkTrigger = timeMillis + 200;
     blinkToggle = !blinkToggle;
     digitalWrite(13, (blinkToggle) ? HIGH : LOW);
   }
@@ -178,10 +185,10 @@ void fall() {
 //  static boolean isUpOld = false;
   static unsigned long isUpTime = 0;
   if ((abs(gaRoll) < 65.0) && (abs(gaPitch) < 65.0)) {
-    isUpTime = timeMilliseconds;
+    isUpTime = timeMillis;
     isUp = true;
   }
-  if ((timeMilliseconds - isUpTime) > 100) {
+  if ((timeMillis - isUpTime) > 100) {
     if (isUp == true) isRunning = false; 
     isUp = false;
   }
@@ -189,6 +196,9 @@ void fall() {
 
 
 
+/***********************************************************************.
+ *  getButtonStatusString() 
+ ***********************************************************************/
 String getButtonStatusString()  {
   String bStatus = "";
   for(int i=0; i<6; i++) {
@@ -239,22 +249,28 @@ void setButtonState(int bStatus) {
 
 
 
+/***********************************************************************.
+ *  sendBlu() Send status to tablet 4/sec.
+ ***********************************************************************/
 void sendBlu() {
   static unsigned long bluTrigger = 0UL;
-  if (isRunning) buttonStatus |= (1 << 0); 
-  else           buttonStatus &= ~(1 << 0);
-  if (isFast)    buttonStatus |= (1 << 1); 
-  else           buttonStatus &= ~(1 << 1);
-  if (timeMilliseconds > bluTrigger) {
-    bluTrigger = timeMilliseconds + 250;
-// Data frame transmitted back from Arduino to Android device:
-// < 0X02   Buttons state   0X01   DataField#1   0x04   DataField#2   0x05   DataField#3    0x03 >  
-// < 0X02      "01011"      0X01     "120.00"    0x04     "-4500"     0x05  "Motor enabled" 0x03 >    // example
+  
+  if (timeMillis > bluTrigger) {
+    bluTrigger = timeMillis + 250;
+
+    if (isRunning) buttonStatus |= (1 << 0); 
+    else           buttonStatus &= ~(1 << 0);
+    if (isFast)    buttonStatus |= (1 << 1); 
+    else           buttonStatus &= ~(1 << 1);
+
+    // Data frame transmitted back from Arduino to Android device:
+    // < 0X02   Buttons state   0X01   DataField#1   0x04   DataField#2   0x05   DataField#3    0x03 >  
+    // < 0X02      "01011"      0X01     "120.00"    0x04     "-4500"     0x05  "Motor enabled" 0x03 >    // example
 
     Serial1.print(STX);                                                         // Start of Transmission
     Serial1.print(getButtonStatusString());  Serial1.print((char)0x1);          // buttons status feedback
-//    Serial1.print(((float) tickPosition) / TICKS_PER_FOOT, 1);       Serial1.print((char)0x4);                    // datafield #1
-    Serial1.print(cosFactor);       Serial1.print((char)0x4);                    // datafield #1
+    Serial1.print(((float) tickPosition) / TICKS_PER_FOOT, 1);       Serial1.print((char)0x4);                    // datafield #1
+//    Serial1.print(cosFactor);       Serial1.print((char)0x4);                    // datafield #1
     Serial1.print(gYaw,0);    Serial1.print((char)0x5);                  // datafield #2
     Serial1.print(((float) analogRead(A1)) * 0.0145, 1); Serial1.print(" V");   // datafield #3
     Serial1.print(ETX);                                                         // End of Transmission
