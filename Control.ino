@@ -22,6 +22,7 @@ void control() {
   blinkLeds();
   fall();
   switches();
+  playBeep();
   state();
   sendBlu();
 }
@@ -72,7 +73,7 @@ void readSerial() {
     }
   }
   
-  
+  // Read the serial input from the USB port
   while (Serial.available() > 0) {
     char b = Serial.read();
     if (isBluePass) { //Bluetooth passthrough?
@@ -227,6 +228,7 @@ void setButtonState(int bStatus) {
      isFast = false;
      break;
    case 'E':          // --- BUTTON #3 ---
+     beep(honk);
      break;
    case 'F':
      break;
@@ -269,11 +271,40 @@ void sendBlu() {
 
     Serial1.print(STX);                                                         // Start of Transmission
     Serial1.print(getButtonStatusString());  Serial1.print((char)0x1);          // buttons status feedback
-    Serial1.print(((float) tickPosition) / TICKS_PER_FOOT, 1);       Serial1.print((char)0x4);                    // datafield #1
-//    Serial1.print(cosFactor);       Serial1.print((char)0x4);                    // datafield #1
+//    Serial1.print(((float) tickPosition) / TICKS_PER_FOOT, 1);       Serial1.print((char)0x4);                    // datafield #1
+    Serial1.print(cosFactor);       Serial1.print((char)0x4);                    // datafield #1
     Serial1.print(gYaw,0);    Serial1.print((char)0x5);                  // datafield #2
     Serial1.print(((float) analogRead(A1)) * 0.0145, 1); Serial1.print(" V");   // datafield #3
     Serial1.print(ETX);                                                         // End of Transmission
   }
+}
+
+
+
+/***********************************************************************.
+ *  playBeep() Simple routine to play notes by the buzzer.  Maybe someday
+ *             someone will adapt the Pololu buzzer routines to replace this.
+ ***********************************************************************/
+void playBeep() {
+  static unsigned long playTrigger = 0;
+  if (isBeeping && (timeMillis > playTrigger)) {
+
+    // Play the next note
+    int freq = beepSequence[beepPtr++];
+    if (freq == 0) {
+      isBeeping = false;
+      noTone(BUZZER_PIN);  Serial.println("off");
+      return;
+    }
+     playTrigger = timeMillis + beepSequence[beepPtr++];
+     tone(BUZZER_PIN, freq);
+     Serial.println(freq);
+  }
+}
+
+void beep(int seq[]) {
+  beepPtr = 0;
+  beepSequence = seq;
+  isBeeping = true;
 }
 

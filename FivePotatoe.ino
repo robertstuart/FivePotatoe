@@ -18,19 +18,20 @@
 #define BALBOA_32U4_BUTTON_C 17
 #define BUTTON_D 5
 #define LED_PIN 14
+#define BUZZER_PIN 6
 
 // ------------------------- Tuning variables ------------------------
 //  Any changes in things like gear ratios, motors, wheel size, weight distribution, 
 //  or changes in performance characteristics, stability, battery voltage etc. will
 //  require changes in one or more of the following variables.
 const float TICKS_PER_FOOT = 1500.0;
-float motorDeadZone = 0.04;    // +- range where motor does not move.  Probably not important.
-float motorFpsToInput = 0.163; // Ration of change in speedR/speedL to fps.
+float motorDeadZone = 0.04;     // +- range where motor does not move.  Probably not important.
+float motorFpsToInput = 0.163;  // Ration of change in speedR/speedL to fps.
 float cosFactor = -0.9;         // May need to be changed when there is a change of weight distribution.
 float cosTc = 0.98;             // Shouldn't need to be changed.
 float angleFactor = 10.0;       // Speed error to pitch angle of FivePotatoe
 float fpsFactor = 0.2;          // Angle error to speed adjustment.
-float pitchError = 7.0;        // Adjust to have no drift forward or backward.
+float pitchError = 7.0;         // Adjust to have no drift forward or backward.
 float motorGainMax = 4.0;       // As high as possible without instability or motor overheating.
 float motorGainMin = 0.5;       // Motor gain at zero fps
 float motorGainFpsLim = 0.5;    // Start reducing gain below this speed
@@ -107,6 +108,13 @@ int sumY = 0;
 int sumZ = 0;
 int sumCount = 0;
 
+// misc
+int beepUp[] = {500,200,600,200,0};
+int honk[] = {2800,300,100,100,2800,300,0};
+int beepPtr = 0;
+int *beepSequence;
+boolean isBeeping = false;
+
 /***********************************************************************.
  *  setup()
  ***********************************************************************/
@@ -118,7 +126,7 @@ void setup() {
   Serial.begin(115200);
   Serial1.begin(115200);
 //  while (!Serial || (millis() < 500));
-  beep();
+  beep(beepUp);
   motorInit();
 //testMotors();
   imuInit();
@@ -144,19 +152,6 @@ void loop() {
   }
   control();
   logFp();
-}
-
-
-
-/***********************************************************************.
- *  beep() 
- ***********************************************************************/
-void beep() {
-  tone(6, 500);
-  delay(200);
-  tone(6,600);
-  delay(200);
-  noTone(6);
 }
 
 

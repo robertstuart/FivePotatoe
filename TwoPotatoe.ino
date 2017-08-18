@@ -7,7 +7,7 @@
  *     A more complete-but still inadequate-explanation is given here: 
  *         http://twopotatoe.net/?page_id=69
  ***********************************************************************/
-const float Y_INC = 0.05;
+const float Y_INC = 0.02;
 void twoPotatoe() {
   static float lpfCoFpsOld = 0.0;
   static float controllerFps = 0.0;
@@ -43,8 +43,8 @@ void twoPotatoe() {
   float targetWFps = fpsCorrection + lpfCoFps;
 
   // Set the steering values.
-  float steeringGain = 0.4;   // Controls how fast it turns at low speed
-  float steeringAtMax = 0.2;  // Controls how fast it turns at top speed
+  float steeringGain = 0.3;   // Controls how fast it turns at low speed
+  float steeringAtMax = 0.15;  // Controls how fast it turns at top speed
   float speedAdjustment = (((1.0 - abs(controllerY)) * steeringGain) + steeringAtMax) * controllerX; 
   targetWFpsRight = targetWFps - speedAdjustment;
   targetWFpsLeft = targetWFps + speedAdjustment;
